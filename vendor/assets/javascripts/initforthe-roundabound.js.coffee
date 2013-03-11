@@ -1,56 +1,69 @@
+class InitfortheCarousel
+  constructor: (carousel) ->
+    @carousel = $(carousel)
+    @setup()
+
+  setup: ->
+    return if @carousel.data('initforthe-carousel')
+    @options = {}
+    @options.interval = @carousel.data('interval') if @carousel.data('interval')
+    @options.pause = @carousel.data('pause') if @carousel.data('pause')
+    @$playButton = @carousel.find('[data-slide-play="1"]')
+    @$pauseButton = @carousel.find('[data-slide-play="0"]')
+    @$items = @carousel.find('.item')
+    @highlight()
+    @carousel.carousel(@options)
+    @carousel.data('initforthe-carousel', true)
+    
+    # Hide play button
+    play = @carousel.find('[data-slide-play]')
+    play.hide() if play.data('slide-play') == 1
+
+    @carousel
+      .on 'click', '[data-slide],.carousel [data-slide-play="0"]', (e) =>
+        e.preventDefault()
+        @pause()
+      .on 'click', '[data-slide-play="1"]', (e) =>
+        e.preventDefault()
+        @resume()
+      .on 'click', '[data-slide-to]', (e) =>
+        e.preventDefault()
+        @slide(e.target)
+      .on 'slid', @highlight
+
+  pause: (e) =>
+    # can come from:
+    # * next/prev buttons
+    # * pause button
+    @carousel.carousel('pause')
+    @$pauseButton.hide()
+    @$playButton.show()
+ 
+  resume: (e) =>
+    # can only come from play button
+    @carousel.carousel('cycle')
+    @$playButton.hide()
+    @$pauseButton.show()
+
+  slide: (element) =>
+    # can only come from slide indicator
+    @carousel.carousel('pause')
+    # first pause, then select
+    @select $(element).data('slide-to')
+
+  select: (position) =>
+    @carousel.carousel(position)
+
+  highlight: =>
+    which = $.inArray(@$items.filter('.active')[0], @$items)
+
+    dataSlideTo = @carousel.find('[data-slide-to]')
+
+    dataSlideTo.removeClass('selected')
+    $(dataSlideTo[which]).addClass('selected')
+
+window.InitfortheCarousel = InitfortheCarousel
+
 $(document).ready ->
   $('.carousel').each ->
-    options = {}
-    options.interval = $(this).data('interval') if $(this).data('interval')
-    options.pause = $(this).data('pause') if $(this).data('pause')
-    $(this).carousel(options)
-  
-  play = $('.carousel').find('[data-slide-play="1"]')
-  play.hide()
-
-  $('.carousel [data-slide-play]').on
-    click: (e) ->
-      e.preventDefault()
-      if $(this).attr('data-slide-play') is '0'
-        pause(this)
-      else
-        resume(this)
-
-  $('.carousel [data-slide]').on
-    click: (e) ->
-      pause(this)
-
-  $('.carousel [data-slide-to]').on
-    click: (e) ->
-      e.preventDefault()
-      pause(this)
-      select(this)
-
-  $('.carousel').on
-    slid: (e) ->
-      highlight($(e.target))
-
-pause = (target) ->
-  carousel = $($(target).attr('href'))
-  carousel.carousel('pause')
-  carousel.find('[data-slide-play="1"]').show() # play
-  carousel.find('[data-slide-play="0"]').hide() # pause
-
-resume = (target) ->
-  carousel = $($(target).attr('href'))
-  carousel.carousel('cycle')
-  carousel.find('[data-slide-play="1"]').hide() # play
-  carousel.find('[data-slide-play="0"]').show() # pause
-
-select = (target) ->
-  carousel = $($(target).attr('href'))
-  pos = $(target).data('slide-to')
-  carousel.carousel(pos)
-  
-highlight = (carousel) ->
-  items = carousel.find('.item')
-  item = carousel.find('.item.active')[0]
-  which = $.inArray(item, items)
-
-  carousel.find('[data-slide-to]').removeClass('selected')
-  $(carousel.find('[data-slide-to]')[which]).addClass('selected')
+    new InitfortheCarousel(this)
